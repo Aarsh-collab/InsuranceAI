@@ -1,2 +1,0 @@
-# InsuranceAI
-Insurance AI project
