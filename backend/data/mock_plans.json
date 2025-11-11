@@ -1,0 +1,18 @@
+[
+  {
+    "plan_name": "BlueCross Silver PPO",
+    "plan_type": "PPO",
+    "tier": "Silver",
+    "monthly_premium": 320,
+    "coverage": ["dental", "vision", "emergency"],
+    "rating": 0.87
+  },
+  {
+    "plan_name": "Kaiser Bronze HMO",
+    "plan_type": "HMO",
+    "tier": "Bronze",
+    "monthly_premium": 210,
+    "coverage": ["emergency", "generic drugs"],
+    "rating": 0.79
+  }
+]

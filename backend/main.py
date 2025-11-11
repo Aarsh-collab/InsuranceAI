@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from routers import chat
+
 
 app = FastAPI(title='InsuranceAI Backend')
+app.include_router(chat.router)
+
 
 app.add_middleware(
     CORSMiddleware,
