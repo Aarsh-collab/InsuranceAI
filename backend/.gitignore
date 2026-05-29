@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.DS_Store
+*.db
+
+ML/
+models/
+
+venv/
+.env

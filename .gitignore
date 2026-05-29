@@ -1,0 +1,70 @@
+.DS_Store
+**/.DS_Store
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.env
+sendgrid.env
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+private/
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+env/
+ENV/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.sqlite-journal
+*.sqlite3-journal
+instance/
+
+# Local ML artifacts / generated training data
+*.pkl
+backend/models/
+backend/ML/life_insurance_data.csv
+
+# Node / frontend
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+.next/
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local uploads / generated artifacts
+uploads/
+tmp/
+temp/
+*.pdf
+!docs/**/*.pdf
