@@ -3,8 +3,16 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 import joblib
 from sklearn.metrics import mean_absolute_error, r2_score
+from pathlib import Path
+
+ML_DIR = Path(__file__).resolve().parent
+BACKEND_DIR = ML_DIR.parent
+DATA_PATH = ML_DIR / "life_insurance_data.csv"
+MODEL_DIR = BACKEND_DIR / "models"
+MODEL_PATH = MODEL_DIR / "life_model.pkl"
+
 # Load dataset
-df = pd.read_csv("life_insurance_data.csv")
+df = pd.read_csv(DATA_PATH)
 
 X = df[[
     "age",
@@ -66,5 +74,6 @@ r2 = r2_score(y_test, y_pred)
 print("MAE:", mae)
 print("R² Score:", r2)
 # Save the trained model
-joblib.dump(model, "life_model.pkl")
-print("Model saved as life_model.pkl")
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
+joblib.dump(model, MODEL_PATH)
+print(f"Model saved as {MODEL_PATH}")
