@@ -14,6 +14,7 @@ from services.lifeInsurance.life_ML import life_ml_helper
 from services.lifeInsurance.life_gap_analysis import lifeDecPageAnalysis
 from services.meeting_organizer import REQUIRED_MEETING_FIELDS, meeting_organizer
 from services.lifeInsurance.life_explanation import lifeExplanation
+from services.conversation_recovery import conversation_recovery
 import os
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
@@ -21,6 +22,7 @@ from core.rate_limiter import limiter
 
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
+DEFAULT_ZIP_RISK = 5
 
 class ChatRequest(BaseModel):
     message: str
@@ -88,6 +90,45 @@ def _sync_life_application_state(state: LifeState, life_insurance_datatable: mod
     state.application.missing_fields = missing
     state.application.completed = bool(state.application.ml_quote is not None and not missing)
 
+
+def _ensure_internal_defaults(life_insurance_datatable: models.LifeInsurance) -> None:
+    if is_missing(life_insurance_datatable.zip_risk):
+        life_insurance_datatable.zip_risk = DEFAULT_ZIP_RISK
+
+
+def _workflow_context(account: models.UserProfile, state: LifeState, has_dec_page: bool) -> dict:
+    return {
+        "meeting_requested": bool(account.meeting_requested),
+        "meeting_status": account.meeting_status,
+        "meeting_preferred_time": account.meeting_preferred_time,
+        "has_preliminary_quote": state.application.ml_quote is not None,
+        "quote_amount": state.application.ml_quote,
+        "intake_completed": bool(state.application.completed),
+        "missing_life_fields": state.application.missing_fields,
+        "has_dec_page": has_dec_page,
+    }
+
+
+def _send_meeting_email(account: models.UserProfile) -> None:
+    message = Mail(
+        from_email=os.environ.get('FROM_EMAIL_ADDRESS'),
+        to_emails=os.environ.get('TO_EMAIL_ADDRESS'),
+        subject='New InsuranceAI Meeting Request',
+        html_content=f'''
+            <strong>New Meeting Request Name: {account.name}<br>
+            Email: {account.email}<br>
+            Phone: {account.phone}<br>
+            Account_id: {account.account_id}</strong><br><br>
+        '''
+    )
+
+    try:
+        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        sg.send(message)
+    except Exception as e:
+        print(str(e))
+
+
 @router.post("/router")
 @limiter.limit("30/minute")
 async def context_router(request: Request, session_id: str, body: ChatRequest, db: Session = Depends(get_db)):
@@ -115,6 +156,8 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
             )
         db.add(life_insurance_datatable)
 
+    _ensure_internal_defaults(life_insurance_datatable)
+
 
     #dec page check
     dec_page_table = db.query(models.DecPage).filter(models.DecPage.session_id == session_id).first()
@@ -131,6 +174,9 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
         state.documents.dec_page.insurance_type = dec_page_table.insurance_type
         state.documents.dec_page.latest_dec_id = dec_page_table.dec_page_id
         state.documents.dec_page.processing_status = "parsed" if dec_page_table.parsed_json else "uploaded"
+
+    _sync_life_application_state(state, life_insurance_datatable)
+    workflow_context = _workflow_context(account, state, dec_page_table is not None)
       
     # ---- Conversation Memory Handling ----
     user_message = body.message
@@ -154,19 +200,7 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
         )
     db.add(saved_user_message)
 
-    # 2. Run summarizer if conversation history gets too long
-    if len(last_messages) > 10:
-        summary = session_summarizer(last_messages, session_summary)
-        state.memory.session_summary = summary
-
-        # Keep only the most recent messages after summarizing
-        state.memory.last_messages = last_messages[-5:]
-
-        # Update local references
-        last_messages = state.memory.last_messages
-        session_summary = summary
-
-    # 3. Determine intent using conversation context
+    # 2. Determine intent using conversation context
     if dec_page_table and _is_dec_page_question(user_message):
         intent = {
             "intent": "gap_analysis",
@@ -174,10 +208,12 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
             "notes": "deterministic_dec_page_question",
         }
     else:
+        route_state = state.dict()
+        route_state["workflow_context"] = workflow_context
         intent = context_manager(
             user_message,
             insurance_type,
-            state.dict(),
+            route_state,
             last_messages,
             session_summary
         )
@@ -189,7 +225,9 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
     if intent.get("intent") == "matching":
         missing = state.application.missing_fields
         was_completed = bool(state.application.completed)
-        reply = lifeInsuranceAI(user_message , state, missing, last_messages, session_summary)
+        reply = lifeInsuranceAI(user_message, state, missing, last_messages, session_summary, workflow_context)
+        if not isinstance(reply, dict) or reply.get("error"):
+            reply = lifeInsuranceAI(user_message, state, missing, last_messages, session_summary, workflow_context)
         print(f'LLM reply: {reply}')
 
      # apply state_updates from LLM (session-level memory only)
@@ -208,6 +246,7 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
         field_updates = reply.get("updated_fields")
 
         if field_updates and isinstance(field_updates, dict):
+            field_updates.pop("zip_risk", None)
             fixed_fields = validate_fields(field_updates)
 
             for field, value in fixed_fields.items():
@@ -242,13 +281,37 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
             state.application.ml_quote = life_quote
             _sync_life_application_state(state, life_insurance_datatable)
             session.state = state.dict()
+            workflow_context = _workflow_context(account, state, dec_page_table is not None)
         
         if (not state.application.missing_fields
             and state.application.ml_quote
             and not was_completed
         ):
             state.application.completed = True
-            reply = f"Based on your info, your estimated premium is ~${round(state.application.ml_quote)}/month. Want a breakdown or next steps?"
+            session.state = state.dict()
+            workflow_context = _workflow_context(account, state, dec_page_table is not None)
+            completion_answer = lifeInsuranceAI(
+                user_message,
+                state,
+                state.application.missing_fields,
+                last_messages,
+                session_summary,
+                workflow_context,
+            )
+            completion_reply = completion_answer.get("response")
+            if completion_reply:
+                reply = completion_reply
+
+        if not reply:
+            retry_answer = lifeInsuranceAI(
+                "The previous matching response was empty. Continue the life insurance conversation from the current state. Acknowledge the user's latest information from recent messages and ask the next appropriate question, or explain the completed preliminary estimate.",
+                state,
+                state.application.missing_fields,
+                last_messages,
+                session_summary,
+                workflow_context,
+            )
+            reply = retry_answer.get("response")
 
 
 
@@ -268,17 +331,34 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
             if is_missing(getattr(account, field, None))
         ]
 
-        # If nothing is missing, do NOT call the LLM again
         if not missing:
             if not account.meeting_requested:
                 account.meeting_requested = True
                 account.meeting_status = "requested"
+                _send_meeting_email(account)
+                account.meeting_status = "sent"
 
-
-            reply = "Your meeting request has already been submitted. A licensed broker will contact you shortly."
+            workflow_context = _workflow_context(account, state, dec_page_table is not None)
+            answer = meeting_organizer(
+                user_message,
+                [],
+                last_messages,
+                session_summary,
+                workflow_context,
+            )
+            reply = answer.get("response")
+            if not reply:
+                retry_answer = meeting_organizer(
+                    "The broker meeting fields are already collected. Confirm the meeting request and suggest the next useful action from workflow context.",
+                    [],
+                    last_messages,
+                    session_summary,
+                    workflow_context,
+                )
+                reply = retry_answer.get("response")
         else:
             # 2. Call meeting LLM only if we still need fields
-            answer = meeting_organizer(user_message, missing, last_messages, session_summary)
+            answer = meeting_organizer(user_message, missing, last_messages, session_summary, workflow_context)
             reply = answer.get("response")
 
             # 3. Apply DB updates from LLM extraction
@@ -301,30 +381,46 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
             if not missing_after and not account.meeting_requested:
                 account.meeting_requested = True
                 account.meeting_status = "requested"
-
-                reply = "Your meeting request has been submitted. A licensed broker will contact you shortly."
-
-                # Send email ONLY once when transitioning to requested
-                message = Mail(
-                    from_email=os.environ.get('FROM_EMAIL_ADDRESS'),
-                    to_emails=os.environ.get('TO_EMAIL_ADDRESS'),
-                    subject='New InsuranceAI Meeting Request',
-                    html_content=f'''
-                        <strong>New Meeting Request Name: {account.name}<br>
-                        Email: {account.email}<br>
-                        Phone: {account.phone}<br>
-                        Account_id: {account.account_id}</strong><br><br>
-                    '''
-                    )
-
-                try:
-                    sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-                    sg.send(message)
-
-                except Exception as e:
-                    print(str(e))
-
+                _send_meeting_email(account)
                 account.meeting_status = "sent"
+
+            workflow_context = _workflow_context(account, state, dec_page_table is not None)
+            if not missing_after:
+                final_answer = meeting_organizer(
+                    user_message,
+                    [],
+                    last_messages,
+                    session_summary,
+                    workflow_context,
+                )
+                reply = final_answer.get("response") or reply
+                if not reply:
+                    retry_answer = meeting_organizer(
+                        "The broker meeting fields are now collected. Confirm the meeting request and suggest the next useful action from workflow context.",
+                        [],
+                        last_messages,
+                        session_summary,
+                        workflow_context,
+                    )
+                    reply = retry_answer.get("response")
+            else:
+                followup_answer = meeting_organizer(
+                    user_message,
+                    missing_after,
+                    last_messages,
+                    session_summary,
+                    workflow_context,
+                )
+                reply = followup_answer.get("response") or reply
+                if not reply:
+                    retry_answer = meeting_organizer(
+                        "Ask the user for the next missing broker meeting field.",
+                        missing_after,
+                        last_messages,
+                        session_summary,
+                        workflow_context,
+                    )
+                    reply = retry_answer.get("response")
             
 
     elif intent.get("intent") == "explanation":
@@ -338,9 +434,19 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
             if value is not None:
                 answered_fields[field] = value
 
-        answer = lifeExplanation(user_message, answered_fields, ml_quote, dec_page, last_messages, session_summary)
+        answer = lifeExplanation(user_message, answered_fields, ml_quote, dec_page, last_messages, None)
 
 
+        reply = answer.get("response")
+
+    elif intent.get("intent") == "other":
+        answer = conversation_recovery(
+            user_message,
+            state.dict(),
+            last_messages,
+            session_summary,
+            workflow_context,
+        )
         reply = answer.get("response")
 
     # ---- Save assistant response to memory ----
@@ -348,18 +454,34 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
     if isinstance(reply, dict):
         reply = reply.get("response")
 
-    if reply and isinstance(reply, str) and reply.strip():
-        state.memory.last_messages.append({
-            "role": "assistant",
-            "content": reply
-        })
-
-        assistant_message = models.Message(
-            session_id = session_id,
-            role = "assistant",
-            content = reply
+    if not (reply and isinstance(reply, str) and reply.strip()):
+        raise HTTPException(
+            status_code=502,
+            detail=f"{intent.get('intent', 'unknown')} handler did not return a response"
         )
-        db.add(assistant_message)
+
+    state.memory.last_messages.append({
+        "role": "assistant",
+        "content": reply
+    })
+
+    assistant_message = models.Message(
+        session_id = session_id,
+        role = "assistant",
+        content = reply
+    )
+    db.add(assistant_message)
+
+    workflow_context = _workflow_context(account, state, dec_page_table is not None)
+    if len(state.memory.last_messages) > 10:
+        summary = session_summarizer(
+            state.memory.last_messages,
+            state.memory.session_summary,
+            state.dict(),
+            workflow_context,
+        )
+        state.memory.session_summary = summary
+        state.memory.last_messages = state.memory.last_messages[-5:]
 
     session.state = state.dict()
     db.add(session)

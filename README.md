@@ -174,17 +174,23 @@ The project includes manual end-to-end flow scripts that exercise the AI convers
 List available scenarios:
 
 ```bash
-ADMIN_TOKEN=test-admin-token python3 backend/tests/manual_life_flow.py --list
+ADMIN_TOKEN=test-admin-token uv run backend/tests/manual_life_flow.py --list
 ```
 
 Core scenarios:
 
 ```bash
-ADMIN_TOKEN=test-admin-token python3 backend/tests/manual_life_flow.py clean
-ADMIN_TOKEN=test-admin-token python3 backend/tests/manual_life_flow.py broker_handoff
-ADMIN_TOKEN=test-admin-token python3 backend/tests/manual_life_flow.py quote_explanation
-ADMIN_TOKEN=test-admin-token python3 backend/tests/manual_life_flow.py privacy
-ADMIN_TOKEN=test-admin-token python3 backend/tests/manual_life_flow.py messy
+ADMIN_TOKEN=test-admin-token uv run backend/tests/manual_life_flow.py clean
+ADMIN_TOKEN=test-admin-token uv run backend/tests/manual_life_flow.py broker_handoff
+ADMIN_TOKEN=test-admin-token uv run backend/tests/manual_life_flow.py quote_explanation
+ADMIN_TOKEN=test-admin-token uv run backend/tests/manual_life_flow.py privacy
+ADMIN_TOKEN=test-admin-token uv run backend/tests/manual_life_flow.py messy
+```
+
+Run the full deep routing suite and save a timestamped transcript:
+
+```bash
+ADMIN_TOKEN=test-admin-token uv run backend/tests/manual_life_flow.py --all --sleep 2 --log-default
 ```
 
 Seed one demo lead and one broker-site lead:
@@ -192,7 +198,7 @@ Seed one demo lead and one broker-site lead:
 ```bash
 ADMIN_TOKEN=test-admin-token \
 SITE_ADMIN=friend-dad-test-token \
-python3 backend/tests/seed_two_site_leads.py
+uv run backend/tests/seed_two_site_leads.py
 ```
 
 ## Rate Limiting

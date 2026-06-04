@@ -10,9 +10,16 @@ from routers import dec_page, context_router, session_router
 from routers.admin import leads_router, messages_router, sessions_router, user_router
 from db.database import init_db
 from dotenv import load_dotenv
+import os
 
 
 load_dotenv()
+
+
+def get_allowed_origins() -> list[str]:
+    raw_origins = os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173")
+    return [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
+
 
 app = FastAPI(title='InsuranceAI Backend')
 
@@ -38,7 +45,7 @@ app.include_router(messages_router.router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=get_allowed_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )

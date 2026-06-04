@@ -3,6 +3,8 @@ from services.lifeInsurance.life_prediction import lifePredictionRequest, life_p
 from db.models import LifeInsurance
 from typing import Optional, Dict, Any
 
+DEFAULT_ZIP_RISK = 5
+
 def life_ml_helper(life_insurance_datatable: LifeInsurance) -> Optional[Dict[str, Any]]:
     required_blockers = []
 
@@ -30,7 +32,7 @@ def life_ml_helper(life_insurance_datatable: LifeInsurance) -> Optional[Dict[str
             alcohol=life_insurance_datatable.alcohol or "none",        # literal
             driving_violations=life_insurance_datatable.driving_violations or 0,
             occupation=life_insurance_datatable.occupation or "low",  # literal
-            zip_risk=life_insurance_datatable.zip_risk or 0,
+            zip_risk=life_insurance_datatable.zip_risk or DEFAULT_ZIP_RISK,
 
             coverage_amount=life_insurance_datatable.coverage_amount,
             term_length=life_insurance_datatable.term_length

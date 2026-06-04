@@ -452,6 +452,75 @@ Status guide:
     - push/deploy
     - avoid editing production directly
 
+
+## Public Launch And Presentation Polish
+
+### README presentation upgrade
+- Status: Parked for post-MVP
+- Priority: P3
+- Notes:
+  - Current README is strong enough for development and broker demos.
+  - Before wider public launch, improve presentation quality:
+    - screenshots
+    - architecture diagrams
+    - deployment diagrams
+    - assistant flow visuals
+    - cleaner top-level pitch
+    - mobile screenshots
+    - clearer feature hierarchy
+  - Focus on real deployed functionality first before polishing visuals.
+
+### Demo screenshots and GIFs
+- Status: Parked for post-MVP
+- Priority: P3
+- Notes:
+  - Add screenshots for:
+    - landing page
+    - assistant widget
+    - admin dashboard
+    - lead detail page
+    - DEC upload flow
+  - Add short GIF/video walkthroughs later for broker outreach and portfolio presentation.
+
+### System architecture diagram
+- Status: Parked for post-MVP
+- Priority: P3
+- Notes:
+  - Add a simple architecture flow diagram showing:
+    - frontend widget
+    - FastAPI backend
+    - context router
+    - ML quote model
+    - OpenAI orchestration
+    - admin dashboard
+    - database flow
+  - Goal is clarity for collaborators, recruiters, and brokers.
+
+### Production architecture documentation
+- Status: Parked for post-MVP
+- Priority: P3
+- Notes:
+  - Document planned production stack:
+    - frontend hosting
+    - AWS backend deployment
+    - database strategy
+    - Redis-backed rate limiting roadmap
+    - PostgreSQL migration path
+  - Keep documentation aligned with real deployment decisions.
+
+### Current limitations section
+- Status: Parked for post-MVP
+- Priority: P3
+- Notes:
+  - Add a dedicated README section explaining:
+    - life insurance only
+    - no carrier integrations
+    - no underwriting engine
+    - OCR limitations
+    - MVP-grade auth
+    - local-model assumptions
+  - Avoid overselling capabilities.
+
 ## Post-MVP Product Upgrades
 
 ### Consumer-first flow

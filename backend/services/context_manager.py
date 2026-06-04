@@ -34,6 +34,21 @@ prefer "matching" UNLESS the user is in a broker handoff / meeting collection fl
 Broker handoff / meeting collection has priority over matching when the user is
 providing contact details or scheduling details after asking for a broker.
 
+Conversation continuity matters more than isolated keywords. Use Recent Messages
+and State.workflow_context to decide what the user is answering.
+
+HIGHEST PRIORITY CONTINUITY RULE:
+If the most recent assistant message asked a specific question, classify the
+current user message as an answer to that question unless the user clearly
+changes topics.
+
+- If the assistant asked an insurance intake question, choose "matching".
+- If the assistant asked for broker contact/scheduling details, choose "meeting".
+- This continuity rule overrides old workflow state such as an already submitted
+  broker request.
+- Do not route an intake answer to "meeting" just because
+  State.workflow_context.meeting_requested is true.
+
 --------------------------------------------------
 CONTEXT
 --------------------------------------------------
@@ -68,6 +83,30 @@ Use this if the user:
 
 IMPORTANT:
 If unsure → choose "matching"
+
+If the assistant recently asked an intake question, classify the user's answer
+as "matching" even if the user previously requested a broker meeting.
+This overrides the meeting intent unless the current user message explicitly
+asks to change/schedule/cancel/check the broker meeting.
+
+Intake questions include:
+- age or gender
+- height, weight, BMI
+- smoker/tobacco status
+- coverage amount or term length
+- diabetes, blood pressure, heart disease, cancer
+- family history
+- alcohol, driving violations, occupation, zip risk
+
+Examples:
+- Assistant: "What age and gender should I use?"
+  User: "I'm 19 male" → matching
+- Assistant: "Could you share your height and weight?"
+  User: "5 foot 9 and 160 lbs" → matching
+- Assistant: "Are you a smoker or non-smoker?"
+  User: "non-smoker" → matching
+- Assistant: "What coverage amount are you looking for?"
+  User: "500k for 20 years" → matching
 
 DO NOT use matching when the user is providing broker contact or scheduling
 details such as name, email, phone, preferred call time, tomorrow, morning,
@@ -189,6 +228,11 @@ Examples:
 
 ALSO use "meeting" if recent messages show the assistant is collecting broker
 meeting/contact details and the current user message answers that request.
+
+If State.workflow_context.meeting_requested is true, do NOT route back to
+"meeting" just because the previous meeting exists. Use "meeting" only if the
+user explicitly asks about broker contact, changes meeting details, or provides
+contact/scheduling info in response to an active meeting question.
 
 Meeting/contact details include:
 - name

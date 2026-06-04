@@ -169,7 +169,7 @@ function DemoPage() {
 
 function WidgetPage() {
   const [searchParams] = useSearchParams();
-  const siteId = searchParams.get("site_id") || "demo";
+  const siteId = searchParams.get("site_id") || "infygrow_fs";
   const brand = searchParams.get("brand") || "InsuranceAI";
   const assistant = useAssistantChat({ siteId, mode: "widget" });
 

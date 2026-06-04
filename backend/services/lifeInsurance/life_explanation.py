@@ -4,7 +4,7 @@ from langchain_core.output_parsers import JsonOutputParser
 
 
 def lifeExplanation(user_message, answered_fields, ml_quote, dec_page, last_messages=None, session_summary=None):
-    model = ChatOpenAI(model="gpt-4o-mini", temperature=0.2)
+    model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     parser = JsonOutputParser()
 
 
@@ -26,12 +26,6 @@ INPUTS
 User Question:
 {user_message}
 
-Conversation Summary (long-term memory):
-{session_summary}
-
-Recent Messages (short-term memory):
-{last_messages}
-
 Current Application Answered Fields (may be empty):
 {answered_fields}
 
@@ -41,6 +35,12 @@ Current ML Quote (may be null if not generated yet):
 Parsed DEC Page (may be empty):
 {dec_page}
 
+Recent Messages (short-term memory, lower priority than current fields/quote):
+{last_messages}
+
+Conversation Summary (lowest priority memory, may be stale):
+{session_summary}
+
 --------------------------------------------------
 YOUR JOB
 --------------------------------------------------
@@ -48,6 +48,10 @@ YOUR JOB
 Answer the user's question in a clear, simple, educational way.
 
 Use the provided context ONLY if it helps explain the user's question.
+
+Current Application Answered Fields and Current ML Quote are the source of truth.
+Conversation Summary and Recent Messages are lower priority memory only.
+If memory conflicts with the current fields or current quote, ignore memory.
 
 You may explain the Current ML Quote if it is provided. You must treat it as an
 existing preliminary estimate, not as a final premium or underwriting decision.
@@ -58,6 +62,12 @@ drivers using ONLY:
 - Current ML Quote
 - Parsed DEC Page, if relevant
 - recent conversation context
+
+If the user changed coverage, term, or another answer, use the current field
+values and current quote as the final truth. You may mention a previous value
+only if it appears clearly in recent messages, but the current quote you state
+must match Current ML Quote. Never reuse an older quote from the summary if
+Current ML Quote is different.
 
 If there is not enough information to explain a personal pricing question,
 say what information is missing and keep the explanation general.
@@ -91,6 +101,9 @@ IMPORTANT RULES
     would need to confirm.
 11. Do not use markdown, numbered lists, bullet lists, or bold text inside the
     response string unless the user explicitly asks for a list.
+12. If you state the user's current estimate, it MUST match Current ML Quote.
+13. If you state current coverage, term, or user details, they MUST match Current
+    Application Answered Fields.
 
 --------------------------------------------------
 PERSONAL QUOTE EXPLANATION RULES
@@ -106,6 +119,9 @@ you may explain that smoking increases insurance risk.
 If the user asks "Why is my estimate around $42/month?", you may say the estimate
 is likely influenced by known fields such as age, smoker status, BMI, coverage
 amount, term length, and disclosed health/lifestyle factors.
+
+If Current ML Quote is provided, use that exact current estimate, rounded only for
+natural wording. Do not quote a different dollar amount from conversation memory.
 
 Do NOT:
 - calculate a new price

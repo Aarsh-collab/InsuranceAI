@@ -2,6 +2,8 @@ from __future__ import annotations
 from typing import Dict, Any, List
 from utils.schema.life_schema import LifeApplicationState, LifeMemory, LifeMeta, LifeDocuments, LifeState, LifeWorkflow, ProfileMemory, DecPageState
 
+DEFAULT_ZIP_RISK = 5
+
 
 # Fields required to generate a life insurance quote
 REQUIRED_LIFE_FIELDS: List[str] = [
@@ -76,6 +78,8 @@ def build_life_state(
         # No row yet: everything is missing
         missing_fields = list(REQUIRED_LIFE_FIELDS)
     else:
+        if getattr(life_application, "zip_risk", None) is None:
+            life_application.zip_risk = DEFAULT_ZIP_RISK
         for field in REQUIRED_LIFE_FIELDS:
             value = getattr(life_application, field, None)
             if value is None:

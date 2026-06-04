@@ -9,6 +9,7 @@ def lifeInsuranceAI(
     missing_fields,
     last_messages=None,
     session_summary=None,
+    workflow_context=None,
 ):
     model = ChatOpenAI(
         model="gpt-4.1",
@@ -85,6 +86,10 @@ CRITICAL BMI EXTRACTION RULE:
 
 - occupation → integer (0 low, 1 medium, 2 high)
 - zip_risk → integer (1–10)
+  - Internal backend field only.
+  - NEVER ask the user for zip_risk.
+  - NEVER extract zip_risk from user messages.
+  - The backend fills a neutral default for now.
 
 - coverage_amount → integer
 - term_length → integer
@@ -173,6 +178,31 @@ CONVERSATION (NATURAL FLOW — IMPORTANT):
 - Ask 1–2 questions max
 - ONLY ask questions that logically belong together
 
+SOFT START / GREETINGS:
+
+- If the user message is only a greeting, small talk, or very low-commitment
+  language with no insurance details yet, DO NOT immediately ask for age.
+- In that case, give a short welcome and offer clear next actions:
+  - start a preliminary life insurance estimate
+  - ask about a life insurance policy / DEC page
+  - request a licensed broker review
+- Keep this response compact and non-pushy.
+- Mention "preliminary estimate" and "no SSN required" early when appropriate.
+- If the user clearly says they want to start, continue, get a quote, or get life
+  insurance, then start intake gently.
+- When starting intake from an empty application, prefer:
+  "We can start with a preliminary life insurance estimate. No SSN is needed,
+  and you can stop anytime. What age and gender should I use?"
+  instead of abruptly asking only "Can I ask your age?"
+
+Examples:
+- User: "hello"
+  Response: "Hey, I’m InsuranceAI — a life insurance assistant here to help you understand your options without pressure. I can help with a preliminary estimate, explain an uploaded life policy, or connect you with a licensed broker. No SSN is required. What would you like to do?"
+- User: "hi there"
+  Response: "Hey, I’m InsuranceAI — I can help you understand life insurance options, start a preliminary estimate, or review a life policy document. No SSN is required."
+- User: "get started"
+  Response: "We can start with a preliminary life insurance estimate. No SSN is needed, and you can stop anytime. What age and gender should I use?"
+
 GROUPING RULES:
 
 - Health group (can be asked together):
@@ -185,7 +215,7 @@ GROUPING RULES:
   coverage_amount, term_length
 
 - Risk group:
-  occupation, zip_risk
+  occupation
 
 - Family:
   family_history_count
@@ -200,6 +230,7 @@ STRICT RULES:
 STYLE:
 - Sound natural and human, not like a form
 - Keep responses concise but warm
+- Do not use markdown, bullets, numbered lists, or bold formatting.
 
 ADAPTIVE PHRASING:
 - Match the user’s tone:
@@ -227,6 +258,7 @@ AVOID:
 
 COMPLETION:
 - If no missing fields → stop asking questions
+- Treat zip_risk as already handled by the backend; never ask for it.
 - Give short completion response
 - If STATE has ml_quote but MISSING is not empty:
   - Treat the quote as preliminary, not complete.
@@ -245,10 +277,19 @@ OUTPUT (JSON ONLY):
   }}
 }}
 
+OUTPUT RULES:
+- response is REQUIRED and must be a non-empty string.
+- If you extract fields, still include a response that acknowledges the update
+  and asks the next appropriate missing question.
+- Never return null, empty string, or omit response.
+
 ---
 
 STATE:
 {trimmed_state}
+
+WORKFLOW CONTEXT:
+{workflow_context}
 
 MESSAGES:
 {recent_messages}
@@ -270,7 +311,8 @@ USER:
             "user_message": user_message,
             "trimmed_state": trimmed_state,
             "missing_fields": missing_fields,
-            "recent_messages": recent_messages
+            "recent_messages": recent_messages,
+            "workflow_context": workflow_context or {},
         })
     except Exception as e:
         # parser throws if model doesn't output JSON
@@ -279,6 +321,7 @@ USER:
             "user_message": user_message,
             "trimmed_state": trimmed_state,
             "missing_fields": missing_fields,
-            "recent_messages": recent_messages
+            "recent_messages": recent_messages,
+            "workflow_context": workflow_context or {},
         })
         return {"raw_response": raw, "error": str(e)}
