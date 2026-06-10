@@ -171,6 +171,7 @@ function WidgetPage() {
   const [searchParams] = useSearchParams();
   const siteId = searchParams.get("site_id") || "infygrow_fs";
   const brand = searchParams.get("brand") || "InsuranceAI";
+  const isEmbedded = searchParams.get("embedded") === "1";
   const assistant = useAssistantChat({ siteId, mode: "widget" });
 
   return (
@@ -178,6 +179,7 @@ function WidgetPage() {
       <AssistantSidebar
         mode="widget"
         brand={brand}
+        hideHeader={isEmbedded}
         isOpen
         messages={assistant.messages}
         isResponding={assistant.isResponding}

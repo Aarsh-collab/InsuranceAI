@@ -7,6 +7,7 @@ function AssistantSidebar({
   isResponding,
   brand = "InsuranceAI",
   mode = "demo",
+  hideHeader = false,
   hasConversation = false,
   connectionStatus = "idle",
   errorMessage = "",
@@ -39,7 +40,7 @@ function AssistantSidebar({
               }`
         }`}
       >
-        <header className="border-b border-white/10 px-4 py-4">
+        {!hideHeader && <header className="border-b border-white/10 px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#d7ad55]">
@@ -64,7 +65,7 @@ function AssistantSidebar({
               </button>
             )}
           </div>
-        </header>
+        </header>}
 
         <div className="min-h-0 flex-1">
           <ChatMessages

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InsuranceAI Embed Preview</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #f4f5f7;
+        color: #17191c;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      }
+
+      header {
+        border-bottom: 1px solid #dedfe2;
+        background: #ffffff;
+      }
+
+      nav,
+      main {
+        width: min(1100px, calc(100% - 40px));
+        margin: 0 auto;
+      }
+
+      nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 68px;
+      }
+
+      main {
+        padding: 72px 0;
+      }
+
+      h1 {
+        max-width: 680px;
+        margin: 0;
+        font-size: clamp(36px, 6vw, 64px);
+        line-height: 1.04;
+        letter-spacing: -0.04em;
+      }
+
+      p {
+        max-width: 620px;
+        margin-top: 24px;
+        color: #62666d;
+        font-size: 17px;
+        line-height: 1.7;
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 64px;
+      }
+
+      article {
+        min-height: 170px;
+        border: 1px solid #dedfe2;
+        border-radius: 8px;
+        background: #ffffff;
+        padding: 22px;
+      }
+
+      @media (max-width: 720px) {
+        .content {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <strong>Example Broker Website</strong>
+        <span>Life Insurance</span>
+      </nav>
+    </header>
+    <main>
+      <h1>Protection built around your family.</h1>
+      <p>
+        This page represents an external broker website. Use the floating life assistant to test the exact
+        embed experience a broker would install.
+      </p>
+      <div class="content">
+        <article><strong>Term life</strong><p>Flexible protection for a defined period.</p></article>
+        <article><strong>Broker guidance</strong><p>Review your options with a licensed professional.</p></article>
+        <article><strong>Policy review</strong><p>Understand important details in an existing life policy.</p></article>
+      </div>
+    </main>
+
+    <script
+      src="/embed.js"
+      data-site-id="infygrow_fs"
+      data-brand="InfyGrow FS"
+      data-button-label="Life assistant"
+    ></script>
+  </body>
+</html>

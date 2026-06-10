@@ -201,6 +201,34 @@ SITE_ADMIN=friend-dad-test-token \
 uv run backend/tests/seed_two_site_leads.py
 ```
 
+## Broker Website Embed
+
+The deployed frontend includes a standalone launcher script that adds a floating
+life-assistant button and opens the existing `/widget` experience in a side
+panel. Add the script before the closing `</body>` tag on a broker website:
+
+```html
+<script
+  src="https://your-insuranceai-domain.com/embed.js"
+  data-site-id="infygrow_fs"
+  data-brand="InfyGrow FS"
+  data-button-label="Life assistant"
+></script>
+```
+
+The launcher infers the InsuranceAI server from `src`, keeps broker-site styles
+isolated, and sends new sessions using the supplied `data-site-id`.
+
+Optional attributes:
+
+```html
+data-position="left"
+data-base-url="https://your-insuranceai-domain.com"
+```
+
+After building the frontend, open `/embed-test.html` to preview the integration
+on a neutral example broker page.
+
 ## Rate Limiting
 
 Current MVP limits:
