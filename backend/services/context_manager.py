@@ -119,9 +119,42 @@ DO NOT use matching for questions about an uploaded declaration page, existing
 policy document, policy coverages, deductibles, premiums, benefits, exclusions,
 riders, endorsements, or coverage labels like Coverage A/B/C/D/E/F.
 
+DO NOT use matching when the user clearly wants to discard the current estimate
+and start over from the beginning. Use "reset_estimate" instead.
+
 --------------------------------------------------
 
-2. "gap_analysis"
+2. "reset_estimate"
+Use if the user clearly wants to wipe the current active life insurance quote
+or intake answers and restart the estimate from the beginning.
+
+This is for discarding the current quote/intake, not for normal edits.
+
+Use reset_estimate for:
+- "let's start a new estimate"
+- "start a new quote"
+- "reset my quote"
+- "reset the estimate"
+- "start over"
+- "redo the estimate"
+- "clear this quote and start again"
+- "I want to restart the life insurance questions"
+- "can we wipe this and begin again?"
+- "new estimate please" when there is already intake progress or a quote
+
+Do NOT use reset_estimate for normal corrections or changes inside the same
+estimate. Those should be "matching".
+
+Examples:
+- "Actually make coverage 750k" → matching
+- "Change the term to 20 years" → matching
+- "I meant non-smoker, not smoker" → matching
+- "Let's start a new estimate" → reset_estimate
+- "Can we reset this and start over?" → reset_estimate
+
+--------------------------------------------------
+
+3. "gap_analysis"
 Use if the user is asking about an uploaded policy document, declaration page,
 existing policy, or policy review.
 
@@ -168,7 +201,7 @@ Examples:
 
 --------------------------------------------------
 
-3. "explanation"
+4. "explanation"
 Use ONLY for general knowledge:
 - "What is term life insurance?"
 - "What does deductible mean?"
@@ -194,7 +227,7 @@ fields. It must NOT generate a new quote.
 
 --------------------------------------------------
 
-4. "meeting"
+5. "meeting"
 Use if the user explicitly wants a human:
 - "Talk to an agent"
 - "Talk to a broker"
@@ -253,7 +286,7 @@ Examples:
 
 --------------------------------------------------
 
-5. "other"
+6. "other"
 Use ONLY if:
 - Message is unrelated
 - Or completely unclear
@@ -265,6 +298,7 @@ CRITICAL RULES
 --------------------------------------------------
 
 - "matching" is the SAFE DEFAULT for insurance intake
+- "reset_estimate" is ONLY for clear requests to discard/restart the active quote
 - "meeting" overrides matching during broker handoff/contact collection
 - explicit broker/agent/human handoff requests MUST be classified as "meeting"
 - Never classify "I want insurance" as "other"
@@ -279,7 +313,7 @@ OUTPUT FORMAT
 Return ONLY valid JSON. Do not include markdown, code fences, prose, or extra keys.
 
 {{
-  "intent": "matching | gap_analysis | explanation | meeting | other",
+  "intent": "matching | reset_estimate | gap_analysis | explanation | meeting | other",
   "confidence": 0.0,
   "notes": ""
 }}

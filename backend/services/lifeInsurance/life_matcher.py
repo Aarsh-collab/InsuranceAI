@@ -259,7 +259,14 @@ AVOID:
 COMPLETION:
 - If no missing fields → stop asking questions
 - Treat zip_risk as already handled by the backend; never ask for it.
-- Give short completion response
+- If MISSING is empty and STATE.application.ml_quote is provided:
+  - You MUST state the current preliminary monthly estimate using STATE.application.ml_quote.
+  - Round only for user-facing wording, for example "~$42/month".
+  - Say it is a preliminary estimate, not a final approval or carrier quote.
+  - Mention that a licensed broker can review it if the user wants.
+  - Do NOT only say the intake is complete or "all set" without giving the estimate.
+- If MISSING is empty but STATE.application.ml_quote is not provided:
+  - Say the intake is complete and that the estimate is being prepared or needs review.
 - If STATE has ml_quote but MISSING is not empty:
   - Treat the quote as preliminary, not complete.
   - Do NOT say everything is done or all set.

@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor
 import joblib
 from sklearn.metrics import mean_absolute_error, r2_score
 from pathlib import Path
@@ -52,13 +52,12 @@ X_train, X_test, y_train, y_test = train_test_split(
     shuffle=True
 )
 
-# Train the Random Forest model
-model = RandomForestRegressor(
-    n_estimators=200,
-    max_depth=15,
-    min_samples_split=8,
-    min_samples_leaf=4,
-    n_jobs=-1,
+# Train the regression model
+model = HistGradientBoostingRegressor(
+    max_iter=300,
+    learning_rate=0.05,
+    max_leaf_nodes=31,
+    l2_regularization=0.01,
     random_state=42
 )
 

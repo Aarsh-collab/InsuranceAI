@@ -95,6 +95,20 @@ def _ensure_internal_defaults(life_insurance_datatable: models.LifeInsurance) ->
     if is_missing(life_insurance_datatable.zip_risk):
         life_insurance_datatable.zip_risk = DEFAULT_ZIP_RISK
 
+def _reset_life_estimate(life_insurance_datatable: models.LifeInsurance, state: LifeState) -> None:
+    for field in ALL_LIFE_FIELDS:
+        setattr(life_insurance_datatable, field, None)
+
+    _ensure_internal_defaults(life_insurance_datatable)
+    state.application.ml_quote = None
+    state.application.refused_fields = {}
+    state.application.answered_fields = {}
+    state.application.missing_fields = []
+    state.application.completed = False
+    state.workflow.stage = "matching"
+    state.workflow.intent = "reset_estimate"
+    state.memory.session_summary = None
+
 
 def _workflow_context(account: models.UserProfile, state: LifeState, has_dec_page: bool) -> dict:
     return {
@@ -222,7 +236,16 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
     reply = None 
     
    
-    if intent.get("intent") == "matching":
+    if intent.get("intent") == "reset_estimate":
+        _reset_life_estimate(life_insurance_datatable, state)
+        _sync_life_application_state(state, life_insurance_datatable)
+        workflow_context = _workflow_context(account, state, dec_page_table is not None)
+        state.memory.last_messages = [{"role": "user", "content": user_message}]
+        session.state = state.dict()
+        db.add(life_insurance_datatable)
+        reply = "Absolutely. I reset the estimate so we can start fresh. What age and gender should I use for the new life insurance estimate?"
+
+    elif intent.get("intent") == "matching":
         missing = state.application.missing_fields
         was_completed = bool(state.application.completed)
         reply = lifeInsuranceAI(user_message, state, missing, last_messages, session_summary, workflow_context)
@@ -438,7 +461,7 @@ async def context_router(request: Request, session_id: str, body: ChatRequest, d
 
 
         reply = answer.get("response")
-
+    
     elif intent.get("intent") == "other":
         answer = conversation_recovery(
             user_message,

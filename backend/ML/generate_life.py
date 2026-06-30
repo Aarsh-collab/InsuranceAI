@@ -178,6 +178,6 @@ def generate_dataset(n=5000):
     return pd.DataFrame(rows)
 
 if __name__ == "__main__":
-    df = generate_dataset(1_000_000)
+    df = generate_dataset(100_000)
     df.to_csv("life_insurance_data.csv", index=False)
     print("Generated life_insurance_data.csv")
