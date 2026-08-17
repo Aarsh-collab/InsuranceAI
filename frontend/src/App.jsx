@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
+import { BrowserRouter, Link, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminLeadDetail from "./components/admin/AdminLeadDetail";
 import AdminLeads from "./components/admin/AdminLeads";
@@ -7,6 +7,7 @@ import AdminOverview from "./components/admin/AdminOverview";
 import RequireAdminAuth from "./components/admin/RequireAdminAuth";
 import AssistantButton from "./components/assistants/AssistantButton";
 import AssistantSidebar from "./components/assistants/AssistantSidebar";
+import SimpleWizardPage from "./components/simple-wizard/SimpleWizardPage";
 import { useAssistantChat } from "./hooks/useAssistantChat";
 
 function DemoPage() {
@@ -23,12 +24,20 @@ function DemoPage() {
                   <p className="text-base font-semibold tracking-[-0.01em] text-white">InsuranceAI</p>
                   <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#d7ad55]">Life insurance active</p>
                 </div>
-                <a
-                  href="/admin/login"
-                  className="rounded-md border border-white/[0.1] px-3 py-2 text-sm text-white/62 transition hover:border-[#d7ad55]/35 hover:text-white"
-                >
-                  Broker dashboard
-                </a>
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/simple"
+                    className="rounded-md border border-white/[0.1] px-3 py-2 text-sm text-white/62 transition hover:border-[#d7ad55]/35 hover:text-white"
+                  >
+                    Simple wizard
+                  </Link>
+                  <a
+                    href="/admin/login"
+                    className="rounded-md border border-white/[0.1] px-3 py-2 text-sm text-white/62 transition hover:border-[#d7ad55]/35 hover:text-white"
+                  >
+                    Broker dashboard
+                  </a>
+                </div>
               </nav>
 
               <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-[#d7ad55]/20 bg-[#d7ad55]/8 px-3 py-2 text-xs font-medium text-[#f2d28c]">
@@ -301,6 +310,7 @@ function App() {
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Route>
         <Route path="/widget" element={<WidgetPage />} />
+        <Route path="/simple" element={<SimpleWizardPage />} />
         <Route path="/" element={<DemoPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
